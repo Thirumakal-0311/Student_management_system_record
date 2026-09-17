@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student Records — CRUD Web Application</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#edf0f3; --surface:#ffffff; --ink:#12202a; --muted:#5b6b79;
+    --line:#d5dce3; --head:#f6f8f9; --primary:#1b4d3e; --primary-ink:#1b4d3e;
+    --primary-soft:#e6efeb; --primary-line:#c3dbd2; --brass:#b08517; --edit-bg:#fdf7e6;
+    --danger:#a02a25; --danger-soft:#fbeceb; --danger-line:#e2c3c1;
+    --radius:4px; --shadow:0 1px 2px rgba(18,32,42,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0f1719; --surface:#16211f; --ink:#e7edea; --muted:#9bb0a8;
+      --line:#2b3a37; --head:#1b2725; --primary:#3f9b7d; --primary-ink:#8fd4ba;
+      --primary-soft:#1c2f28; --primary-line:#2f4c42; --brass:#d8ab3f; --edit-bg:#2a2617;
+      --danger:#e9827c; --danger-soft:#33201f; --danger-line:#5a3330;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0f1719; --surface:#16211f; --ink:#e7edea; --muted:#9bb0a8;
+    --line:#2b3a37; --head:#1b2725; --primary:#3f9b7d; --primary-ink:#8fd4ba;
+    --primary-soft:#1c2f28; --primary-line:#2f4c42; --brass:#d8ab3f; --edit-bg:#2a2617;
+    --danger:#e9827c; --danger-soft:#33201f; --danger-line:#5a3330;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.55}
+  h1,h2,h3{font-family:Sora,Inter,system-ui,sans-serif;font-weight:600;letter-spacing:-.015em}
+  .app{max-width:1180px;margin:0 auto;padding:32px 20px 64px}
+
+  .masthead{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:flex-end;
+            padding-bottom:18px;border-bottom:2px solid var(--ink);margin-bottom:24px}
+  .masthead h1{margin:0 0 4px;font-size:30px}
+  .masthead p{margin:0;color:var(--muted);max-width:52ch}
+  .stats{display:flex;gap:28px}
+  .stats div{display:flex;flex-direction:column}
+  .stats strong{font-family:Sora,sans-serif;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .stats span{font-size:13px;color:var(--muted)}
+
+  .layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:start}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .form{padding:20px;position:sticky;top:24px}
+  .form h2{margin:0 0 16px;font-size:17px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:5px}
+  input,select{width:100%;padding:9px 10px;font:inherit;color:var(--ink);background:var(--surface);
+               border:1px solid var(--line);border-radius:var(--radius)}
+  input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field-error{margin:5px 0 0;font-size:12.5px;color:var(--danger)}
+  .checkbox{display:flex;align-items:center;gap:8px;font-size:14px;margin:4px 0 18px}
+  .checkbox input{width:auto}
+  .form-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+  .btn{font:inherit;font-weight:500;padding:9px 16px;border-radius:var(--radius);
+       border:1px solid transparent;background:var(--surface);color:var(--ink);cursor:pointer}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn.ghost{border-color:var(--line);color:var(--muted)}
+  .btn.small{padding:5px 10px;font-size:13px;border-color:var(--line)}
+  .btn.danger{color:var(--danger);border-color:var(--danger-line);background:var(--danger-soft)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .toolbar .search{flex:1 1 240px}
+  .toolbar select{width:auto;flex:0 0 auto}
+
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:11px 16px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:12.5px;font-weight:600;color:var(--muted);background:var(--head);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr.is-editing{background:var(--edit-bg);box-shadow:inset 3px 0 0 var(--brass)}
+  .mono{font-variant-numeric:tabular-nums;letter-spacing:.02em;font-weight:500}
+  .name{font-weight:500}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .strong{font-weight:600}
+  .contact{font-size:13px}
+  .contact a{display:block;color:var(--primary-ink);text-decoration:none}
+  .contact a:hover{text-decoration:underline}
+  .contact span{color:var(--muted)}
+  .actions{text-align:right;white-space:nowrap}
+  .actions .btn+.btn{margin-left:6px}
+  .pill{font-size:12px;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .pill.on{background:var(--primary-soft);color:var(--primary-ink)}
+  .pill.off{background:var(--head);color:var(--muted)}
+
+  .state{padding:44px 16px;text-align:center;color:var(--muted)}
+  .state.empty p{margin:0 0 4px;color:var(--ink)}
+  .state .muted{color:var(--muted);font-size:14px}
+  .notice{padding:11px 16px;border-radius:var(--radius);margin-bottom:18px;font-size:14px}
+  .notice.success{background:var(--primary-soft);color:var(--primary-ink);border:1px solid var(--primary-line)}
+  .notice.error{background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger-line)}
+
+  .overlay{position:fixed;inset:0;background:rgba(8,16,14,.55);display:grid;place-items:center;padding:20px;z-index:20}
+  .dialog{background:var(--surface);border-radius:var(--radius);padding:24px;max-width:420px;width:100%;border:1px solid var(--line)}
+  .dialog h3{margin:0 0 8px;font-size:18px}
+  .dialog p{margin:0 0 20px;color:var(--muted)}
+
+  .footnote{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  .footnote code{background:var(--head);padding:1px 5px;border-radius:3px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+  @media (max-width:940px){.layout{grid-template-columns:1fr}.form{position:static}}
+  @media (max-width:640px){
+    .app{padding:20px 14px 48px}.masthead h1{font-size:24px}
+    thead{display:none}
+    table,tbody,tr,td{display:block;width:100%}
+    tr{border-bottom:1px solid var(--line);padding:12px 4px}
+    td{border:none;padding:3px 12px}
+    td.num,td.actions{text-align:left}.actions{padding-top:10px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js" crossorigin></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback } = React;
+
+/* =========================================================================
+   1. DATA LAYER  —  plays the role of the database + REST API
+   Records live in browser storage. Every method is async and returns the
+   same envelope the Django backend returns, so swapping in a real server
+   means changing only this object.
+   ========================================================================= */
+const STORE_KEY = "sms.students.v1";
+
+const DEPARTMENTS = [
+  { value: "CSE",   label: "Computer Science and Engineering" },
+  { value: "IT",    label: "Information Technology" },
+  { value: "ECE",   label: "Electronics and Communication" },
+  { value: "EEE",   label: "Electrical and Electronics" },
+  { value: "MECH",  label: "Mechanical Engineering" },
+  { value: "CIVIL", label: "Civil Engineering" },
+];
+
+const SEED = [
+  { roll_number:"21CSE045", full_name:"Arun Kumar",        email:"arun.kumar@example.com",  phone:"9876543210", department:"CSE",  year_of_study:3, cgpa:8.45, date_of_birth:"2003-06-14", is_active:true },
+  { roll_number:"21IT012",  full_name:"Divya Ramesh",      email:"divya.r@example.com",     phone:"9812345670", department:"IT",   year_of_study:2, cgpa:9.10, date_of_birth:"2004-02-02", is_active:true },
+  { roll_number:"20ECE078", full_name:"Karthik Subramani", email:"karthik.s@example.com",   phone:"9790011223", department:"ECE",  year_of_study:4, cgpa:7.80, date_of_birth:"2002-11-21", is_active:true },
+  { roll_number:"22MECH009",full_name:"Priya Natarajan",   email:"priya.n@example.com",     phone:"9600123456", department:"MECH", year_of_study:1, cgpa:8.05, date_of_birth:"2005-04-09", is_active:true },
+  { roll_number:"21CSE102", full_name:"Sanjay Venkatesh",  email:"sanjay.v@example.com",    phone:"9944556677", department:"CSE",  year_of_study:3, cgpa:6.95, date_of_birth:"2003-09-30", is_active:false },
+];
+
+function readTable() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* storage blocked or corrupt — fall through to seed */ }
+  const seeded = SEED.map((s, i) => ({ ...s, id: i + 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }));
+  writeTable(seeded);
+  return seeded;
+}
+
+function writeTable(rows) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(rows)); }
+  catch (e) { /* private browsing: keep working in memory for this session */ }
+}
+
+/** Server-side validation. Mirrors serializers.py — runs even if the form is bypassed. */
+function validateRecord(payload, rows, editingId) {
+  const errors = {};
+  const roll = String(payload.roll_number || "").trim().toUpperCase();
+  const email = String(payload.email || "").trim().toLowerCase();
+  const name = String(payload.full_name || "").replace(/\s+/g, " ").trim();
+  const cgpa = Number(payload.cgpa);
+  const year = Number(payload.year_of_study);
+
+  if (!roll) errors.roll_number = ["Roll number is required."];
+  else if (!/^[A-Za-z0-9]{4,15}$/.test(roll)) errors.roll_number = ["Use 4-15 letters or digits, no spaces."];
+  else if (rows.some(r => r.roll_number === roll && r.id !== editingId))
+    errors.roll_number = ["This roll number is already registered."];
+
+  if (!name) errors.full_name = ["Name is required."];
+  else if (name.length < 3) errors.full_name = ["Name must be at least 3 characters."];
+  else if (!/^[A-Za-z. ]+$/.test(name)) errors.full_name = ["Name may contain letters and spaces only."];
+
+  if (!email) errors.email = ["Email is required."];
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) errors.email = ["Enter a valid email address."];
+  else if (rows.some(r => r.email === email && r.id !== editingId))
+    errors.email = ["This email is already registered."];
+
+  if (!/^[6-9]\d{9}$/.test(String(payload.phone || "").trim()))
+    errors.phone = ["Enter a 10-digit mobile number starting with 6-9."];
+
+  if (!DEPARTMENTS.some(d => d.value === payload.department))
+    errors.department = ["Choose a department from the list."];
+
+  if (!(year >= 1 && year <= 4)) errors.year_of_study = ["Year must be between 1 and 4."];
+
+  if (payload.cgpa === "" || payload.cgpa === null || Number.isNaN(cgpa))
+    errors.cgpa = ["CGPA is required."];
+  else if (cgpa < 0 || cgpa > 10) errors.cgpa = ["CGPA must be between 0 and 10."];
+  else if (year >= 2 && cgpa === 0) errors.cgpa = ["A student beyond first year must have a CGPA above 0."];
+
+  if (payload.date_of_birth && new Date(payload.date_of_birth) >= new Date())
+    errors.date_of_birth = ["Date of birth must be in the past."];
+
+  return { errors, clean: { ...payload, roll_number: roll, email, full_name: name, cgpa, year_of_study: year } };
+}
+
+/** Raised for any failed request, carrying the same shape as a 400/404 body. */
+function apiError(message, errors, status) {
+  return { message, errors: errors || {}, status };
+}
+
+const studentApi = {
+  // READ ALL  →  GET /api/students/
+  async list({ search = "", department = "", year_of_study = "", ordering = "roll_number" } = {}) {
+    const rows = readTable();
+    const q = search.trim().toLowerCase();
+    let out = rows.filter(r =>
+      (!q || r.roll_number.toLowerCase().includes(q) || r.full_name.toLowerCase().includes(q) || r.email.includes(q)) &&
+      (!department || r.department === department) &&
+      (!year_of_study || String(r.year_of_study) === String(year_of_study))
+    );
+    const desc = ordering.startsWith("-");
+    const key = desc ? ordering.slice(1) : ordering;
+    out.sort((a, b) => {
+      const x = a[key], y = b[key];
+      const cmp = typeof x === "number" ? x - y : String(x).localeCompare(String(y));
+      return desc ? -cmp : cmp;
+    });
+    return { count: out.length, results: out };
+  },
+
+  // READ ONE  →  GET /api/students/{id}/
+  async retrieve(id) {
+    const found = readTable().find(r => r.id === id);
+    if (!found) throw apiError("Record not found.", {}, 404);
+    return found;
+  },
+
+  // CREATE  →  POST /api/students/
+  async create(payload) {
+    const rows = readTable();
+    const { errors, clean } = validateRecord(payload, rows, null);
+    if (Object.keys(errors).length) throw apiError("Validation failed. Please correct the highlighted fields.", errors, 400);
+    const now = new Date().toISOString();
+    const record = { ...clean, id: rows.reduce((m, r) => Math.max(m, r.id), 0) + 1, created_at: now, updated_at: now };
+    writeTable([...rows, record]);
+    return { success: true, message: "Student added.", data: record };
+  },
+
+  // UPDATE  →  PUT/PATCH /api/students/{id}/
+  async update(id, payload) {
+    const rows = readTable();
+    const index = rows.findIndex(r => r.id === id);
+    if (index === -1) throw apiError("Record not found.", {}, 404);
+    const { errors, clean } = validateRecord(payload, rows, id);
+    if (Object.keys(errors).length) throw apiError("Validation failed. Please correct the highlighted fields.", errors, 400);
+    const record = { ...rows[index], ...clean, id, updated_at: new Date().toISOString() };
+    rows[index] = record;
+    writeTable(rows);
+    return { success: true, message: "Student updated.", data: record };
+  },
+
+  // DELETE  →  DELETE /api/students/{id}/
+  async remove(id) {
+    const rows = readTable();
+    const found = rows.find(r => r.id === id);
+    if (!found) throw apiError("Record not found.", {}, 404);
+    writeTable(rows.filter(r => r.id !== id));
+    return { success: true, message: `Deleted ${found.roll_number} - ${found.full_name}.` };
+  },
+
+  // SUMMARY  →  GET /api/students/stats/
+  async stats() {
+    const rows = readTable();
+    const total = rows.length;
+    const average = total ? rows.reduce((s, r) => s + Number(r.cgpa), 0) / total : 0;
+    return { success: true, data: { total, active: rows.filter(r => r.is_active).length, average_cgpa: average } };
+  },
+
+  async reset() {
+    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+    readTable();
+    return { success: true, message: "Register reset to the sample records." };
+  },
+};
+
+/* =========================================================================
+   2. FORM  —  client-side validation for fast feedback
+   ========================================================================= */
+const EMPTY = { roll_number:"", full_name:"", email:"", phone:"", department:"CSE",
+                year_of_study:1, cgpa:"", date_of_birth:"", is_active:true };
+
+function validateForm(v) {
+  const e = {};
+  if (!v.roll_number.trim()) e.roll_number = "Roll number is required.";
+  else if (!/^[A-Za-z0-9]{4,15}$/.test(v.roll_number.trim())) e.roll_number = "Use 4-15 letters or digits, no spaces.";
+  if (!v.full_name.trim()) e.full_name = "Name is required.";
+  else if (v.full_name.trim().length < 3) e.full_name = "Name is too short.";
+  if (!v.email.trim()) e.email = "Email is required.";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email.trim())) e.email = "Enter a valid email address.";
+  if (!/^[6-9]\d{9}$/.test(v.phone.trim())) e.phone = "Enter a 10-digit mobile number starting with 6-9.";
+  if (v.cgpa === "") e.cgpa = "CGPA is required.";
+  else if (Number.isNaN(Number(v.cgpa)) || Number(v.cgpa) < 0 || Number(v.cgpa) > 10) e.cgpa = "CGPA must be between 0 and 10.";
+  if (v.date_of_birth && new Date(v.date_of_birth) >= new Date()) e.date_of_birth = "Date of birth must be in the past.";
+  return e;
+}
+
+function StudentForm({ editing, onSubmit, onCancel, serverErrors, busy }) {
+  const [values, setValues] = useState(EMPTY);
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    setValues(editing ? { ...EMPTY, ...editing, cgpa: String(editing.cgpa), date_of_birth: editing.date_of_birth || "" } : EMPTY);
+    setErrors({});
+  }, [editing]);
+
+  const shown = { ...errors, ...serverErrors };
+
+  function change(ev) {
+    const { name, value, type, checked } = ev.target;
+    setValues(v => ({ ...v, [name]: type === "checkbox" ? checked : value }));
+    setErrors(e => ({ ...e, [name]: undefined }));
+  }
+
+  function submit(ev) {
+    ev.preventDefault();
+    const found = validateForm(values);
+    setErrors(found);
+    if (Object.keys(found).length) return;
+    onSubmit({ ...values, cgpa: Number(values.cgpa), year_of_study: Number(values.year_of_study),
+               date_of_birth: values.date_of_birth || null });
+  }
+
+  const field = (name, label, input) => (
+    <div className="field">
+      <label htmlFor={name}>{label}</label>
+      {input}
+      {shown[name] && <p className="field-error">{[].concat(shown[name])[0]}</p>}
+    </div>
+  );
+
+  return (
+    <form className="panel form" onSubmit={submit} noValidate>
+      <h2>{editing ? `Editing ${editing.roll_number}` : "Add a student"}</h2>
+
+      {field("roll_number", "Roll number",
+        <input id="roll_number" name="roll_number" value={values.roll_number} onChange={change} placeholder="21CSE045" autoComplete="off" />)}
+      {field("full_name", "Full name",
+        <input id="full_name" name="full_name" value={values.full_name} onChange={change} placeholder="Arun Kumar" />)}
+      {field("email", "Email",
+        <input id="email" name="email" type="email" value={values.email} onChange={change} placeholder="arun.kumar@example.com" />)}
+      {field("phone", "Mobile number",
+        <input id="phone" name="phone" value={values.phone} onChange={change} placeholder="9876543210" maxLength={10} inputMode="numeric" />)}
+      {field("department", "Department",
+        <select id="department" name="department" value={values.department} onChange={change}>
+          {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+        </select>)}
+
+      <div className="row">
+        {field("year_of_study", "Year",
+          <select id="year_of_study" name="year_of_study" value={values.year_of_study} onChange={change}>
+            {[1,2,3,4].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>)}
+        {field("cgpa", "CGPA",
+          <input id="cgpa" name="cgpa" type="number" step="0.01" min="0" max="10" value={values.cgpa} onChange={change} placeholder="8.45" />)}
+      </div>
+
+      {field("date_of_birth", "Date of birth",
+        <input id="date_of_birth" name="date_of_birth" type="date" value={values.date_of_birth || ""} onChange={change} />)}
+
+      <label className="checkbox">
+        <input type="checkbox" name="is_active" checked={values.is_active} onChange={change} />
+        Currently enrolled
+      </label>
+
+      <div className="form-actions">
+        <button type="submit" className="btn primary" disabled={busy}>
+          {busy ? "Saving…" : editing ? "Save changes" : "Add student"}
+        </button>
+        {editing && <button type="button" className="btn ghost" onClick={onCancel}>Cancel</button>}
+      </div>
+    </form>
+  );
+}
+
+/* =========================================================================
+   3. LIST, TOOLBAR, DIALOG, STATS
+   ========================================================================= */
+function Toolbar({ filters, onChange }) {
+  return (
+    <div className="toolbar">
+      <input className="search" type="search" value={filters.search} aria-label="Search students"
+             placeholder="Search by name, roll number or email"
+             onChange={e => onChange({ ...filters, search: e.target.value })} />
+      <select value={filters.department} aria-label="Filter by department"
+              onChange={e => onChange({ ...filters, department: e.target.value })}>
+        <option value="">All departments</option>
+        {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.value}</option>)}
+      </select>
+      <select value={filters.year_of_study} aria-label="Filter by year"
+              onChange={e => onChange({ ...filters, year_of_study: e.target.value })}>
+        <option value="">All years</option>
+        {[1,2,3,4].map(y => <option key={y} value={y}>Year {y}</option>)}
+      </select>
+      <select value={filters.ordering} aria-label="Sort records"
+              onChange={e => onChange({ ...filters, ordering: e.target.value })}>
+        <option value="roll_number">Roll number</option>
+        <option value="full_name">Name</option>
+        <option value="-cgpa">Highest CGPA</option>
+        <option value="-created_at">Recently added</option>
+      </select>
+    </div>
+  );
+}
+
+function StudentTable({ students, loading, onEdit, onDelete, editingId }) {
+  if (loading) return <p className="state">Loading records…</p>;
+  if (!students.length) return (
+    <div className="state empty">
+      <p>No records match this view.</p>
+      <p className="muted">Add a student with the form, or clear the filters.</p>
+    </div>
+  );
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Roll number</th><th>Name</th><th>Department</th>
+            <th className="num">Year</th><th className="num">CGPA</th>
+            <th>Contact</th><th>Status</th><th><span className="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {students.map(s => (
+            <tr key={s.id} className={s.id === editingId ? "is-editing" : ""}>
+              <td className="mono">{s.roll_number}</td>
+              <td className="name">{s.full_name}</td>
+              <td>{s.department}</td>
+              <td className="num">{s.year_of_study}</td>
+              <td className="num strong">{Number(s.cgpa).toFixed(2)}</td>
+              <td className="contact">
+                <a href={`mailto:${s.email}`}>{s.email}</a>
+                <span>{s.phone}</span>
+              </td>
+              <td><span className={s.is_active ? "pill on" : "pill off"}>{s.is_active ? "Enrolled" : "Inactive"}</span></td>
+              <td className="actions">
+                <button className="btn small" onClick={() => onEdit(s)}>Edit</button>
+                <button className="btn small danger" onClick={() => onDelete(s)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ConfirmDialog({ student, onConfirm, onCancel, busy }) {
+  if (!student) return null;
+  return (
+    <div className="overlay" role="dialog" aria-modal="true" aria-label="Confirm deletion">
+      <div className="dialog">
+        <h3>Delete this record?</h3>
+        <p>{student.full_name} ({student.roll_number}) will be removed from the register. This cannot be undone.</p>
+        <div className="form-actions">
+          <button className="btn danger" onClick={onConfirm} disabled={busy}>{busy ? "Deleting…" : "Delete record"}</button>
+          <button className="btn ghost" onClick={onCancel}>Keep it</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatsBar({ stats }) {
+  if (!stats) return null;
+  return (
+    <div className="stats">
+      <div><strong>{stats.total}</strong><span>records</span></div>
+      <div><strong>{stats.active}</strong><span>enrolled</span></div>
+      <div><strong>{Number(stats.average_cgpa).toFixed(2)}</strong><span>average CGPA</span></div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   4. APP  —  wires the interface to the data layer
+   ========================================================================= */
+function App() {
+  const [students, setStudents] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [serverErrors, setServerErrors] = useState({});
+  const [notice, setNotice] = useState(null);
+  const [filters, setFilters] = useState({ search: "", department: "", year_of_study: "", ordering: "roll_number" });
+
+  const flash = (type, message) => { setNotice({ type, message }); setTimeout(() => setNotice(null), 4000); };
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [list, summary] = await Promise.all([studentApi.list(filters), studentApi.stats()]);
+      setStudents(list.results);
+      setStats(summary.data);
+    } catch (err) {
+      flash("error", err.message || "Could not load the register.");
+      setStudents([]);
+    } finally { setLoading(false); }
+  }, [filters]);
+
+  useEffect(() => {
+    const timer = setTimeout(load, filters.search ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [load, filters.search]);
+
+  async function handleSubmit(payload) {
+    setBusy(true); setServerErrors({});
+    try {
+      const res = editing ? await studentApi.update(editing.id, payload) : await studentApi.create(payload);
+      flash("success", res.message);
+      if (editing) setEditing(null);
+      await load();
+    } catch (err) {
+      setServerErrors(err.errors || {});
+      flash("error", err.message || "The request failed.");
+    } finally { setBusy(false); }
+  }
+
+  async function handleDelete() {
+    setBusy(true);
+    try {
+      const res = await studentApi.remove(pendingDelete.id);
+      flash("success", res.message);
+      if (editing && editing.id === pendingDelete.id) setEditing(null);
+      setPendingDelete(null);
+      await load();
+    } catch (err) {
+      flash("error", err.message || "The request failed.");
+    } finally { setBusy(false); }
+  }
+
+  async function handleReset() {
+    const res = await studentApi.reset();
+    setEditing(null);
+    flash("success", res.message);
+    await load();
+  }
+
+  function startEdit(student) {
+    setEditing(student); setServerErrors({});
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  return (
+    <div className="app">
+      <header className="masthead">
+        <div>
+          <h1>Student records</h1>
+          <p>Department office register — add, review, correct and remove student entries.</p>
+        </div>
+        <StatsBar stats={stats} />
+      </header>
+
+      {notice && <div className={`notice ${notice.type}`} role="status">{notice.message}</div>}
+
+      <main className="layout">
+        <StudentForm editing={editing} onSubmit={handleSubmit} onCancel={() => setEditing(null)}
+                     serverErrors={serverErrors} busy={busy} />
+        <section className="panel list">
+          <Toolbar filters={filters} onChange={setFilters} />
+          <StudentTable students={students} loading={loading} editingId={editing && editing.id}
+                        onEdit={startEdit} onDelete={setPendingDelete} />
+        </section>
+      </main>
+
+      <ConfirmDialog student={pendingDelete} busy={busy} onConfirm={handleDelete} onCancel={() => setPendingDelete(null)} />
+
+      <p className="footnote">
+        Records are saved in this browser, so they survive a page refresh. Open the file on
+        another device and you start with the five sample records again.{" "}
+        <button className="btn small" onClick={handleReset}>Reset to sample data</button>
+      </p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
