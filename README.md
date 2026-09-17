@@ -3,7 +3,7 @@
 A complete Create / Read / Update / Delete web application in a single HTML file.
 Built with React 18, plain CSS, and browser storage as the data layer.
 
-**Live demo:** https://YOUR-USERNAME.github.io/student-management/
+* 
 
 ## Running it
 
